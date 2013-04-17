@@ -219,6 +219,7 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
 	 */
 	return retval;
 }
+
 #endif
 
 static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
