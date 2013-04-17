@@ -37,15 +37,10 @@
 #endif
 
 /*
- * A mutex count of -1 indicates that waiters are sleeping waiting for the
- * mutex. Some architectures can allow any negative number, not just -1, for
- * this purpose.
+ * A negative mutex count indicates that waiters are sleeping waiting for the
+ * mutex.
  */
-#ifdef __ARCH_ALLOW_ANY_NEGATIVE_MUTEX_COUNT
 #define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
-#else
-#define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) != -1)
-#endif
 
 void
 __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
@@ -108,10 +103,9 @@ void __sched mutex_lock(struct mutex *lock)
 EXPORT_SYMBOL(mutex_lock);
 #endif
 
-<<<<<<< HEAD
-=======
 #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
 /*
+<<<<<<< HEAD
  * In order to avoid a stampede of mutex spinners from acquiring the mutex
  * more or less simultaneously, the spinners need to acquire a MCS lock
  * first before spinning on the owner field.
@@ -166,6 +160,8 @@ static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
 }
 
 /*
+=======
+>>>>>>> 7915d4d... mutex: Move mutex spinning code from sched/core.c back to mutex.c
  * Mutex spinning code migrated from kernel/sched/core.c
  */
 
@@ -208,6 +204,7 @@ int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
 	 */
 	return lock->owner == NULL;
 }
+<<<<<<< HEAD
 
 /*
  * Initial check for entering the mutex spinning loop
@@ -226,9 +223,10 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
 	 */
 	return retval;
 }
+=======
+>>>>>>> 7915d4d... mutex: Move mutex spinning code from sched/core.c back to mutex.c
 #endif
 
->>>>>>> 5ecffb7... mutex: Queue mutex spinners with MCS lock to reduce cacheline contention
 static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
 
 /**
