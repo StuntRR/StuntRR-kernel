@@ -118,7 +118,6 @@ static unsigned int up_rate;
 #define DEFAULT_DOWN_RATE 80000
 static unsigned int down_rate;
 
-<<<<<<< HEAD
 /* in nsecs */
 #define DEFAULT_SAMPLING_RATE 40000
 static unsigned int sampling_rate;
@@ -126,12 +125,11 @@ static unsigned int min_sampling_rate;
 
 /* in nsecs */
 #define DEFAULT_INPUT_BOOST_DURATION 50000000
-=======
+
 /* in usecs */
 static unsigned int sampling_rate;
 
 /* in usecs */
->>>>>>> 62e9156... smartmax: it helps to know the diff between us and ns :)
 static unsigned int input_boost_duration;
 
 static unsigned int touch_poke_freq = 760000;
@@ -492,11 +490,7 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	unsigned int cur;
 	struct cpufreq_policy *policy = this_smartmax->cur_policy;
-<<<<<<< HEAD
-	cputime64_t now = ktime_to_ns(ktime_get());
-=======
 	u64 now = ktime_to_us(ktime_get());
->>>>>>> 62e9156... smartmax: it helps to know the diff between us and ns :)
 	unsigned int max_load_freq;
 	unsigned int debug_load = 0;
 	unsigned int debug_iowait = 0;
@@ -1072,8 +1066,6 @@ static int cpufreq_smartmax_boost_task(void *data) {
 		if (!this_smartmax)
 			continue;
 
-<<<<<<< HEAD
-=======
 #ifdef CONFIG_CPU_FREQ_GOV_SMARTMAX_TEGRA
 		if (tegra_input_boost(0, cur_boost_freq) < 0) {
 			continue;
@@ -1088,7 +1080,6 @@ static int cpufreq_smartmax_boost_task(void *data) {
         this_smartmax->prev_cpu_idle = get_cpu_idle_time(0,
 						&this_smartmax->prev_cpu_wall);
 #else
->>>>>>> 62e9156... smartmax: it helps to know the diff between us and ns :)
 		policy = this_smartmax->cur_policy;
 		if (!policy)
 			continue;
