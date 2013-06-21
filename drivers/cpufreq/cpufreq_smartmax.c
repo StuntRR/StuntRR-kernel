@@ -53,7 +53,7 @@
  */
 
 #define GOV_IDLE_FREQ 300000
-#ifdef CONFIG_CPU_FREQ_GOV_SMARTMAX_GEEB
+#ifdef CONFIG_CPU_FREQ_GOV_SMARTMAX
 #define DEFAULT_SUSPEND_IDEAL_FREQ 300000
 #define DEFAULT_AWAKE_IDEAL_FREQ 652800
 #define DEFAULT_RAMP_UP_STEP 200000
@@ -105,19 +105,20 @@ static unsigned int max_cpu_load;
 static unsigned int min_cpu_load;
 
 /*
- * The minimum amount of time in nsecs to spend at a frequency before we can ramp up.
+ * The minimum amount of time in usecs to spend at a frequency before we can ramp up.
  * Notice we ignore this when we are below the ideal frequency.
  */
 #define DEFAULT_UP_RATE 40000
 static unsigned int up_rate;
 
 /*
- * The minimum amount of time in nsecs to spend at a frequency before we can ramp down.
+ * The minimum amount of time in usecs to spend at a frequency before we can ramp down.
  * Notice we ignore this when we are above the ideal frequency.
  */
 #define DEFAULT_DOWN_RATE 80000
 static unsigned int down_rate;
 
+<<<<<<< HEAD
 /* in nsecs */
 #define DEFAULT_SAMPLING_RATE 40000
 static unsigned int sampling_rate;
@@ -125,6 +126,13 @@ static unsigned int min_sampling_rate;
 
 /* in nsecs */
 #define DEFAULT_INPUT_BOOST_DURATION 50000000
+=======
+/* in usecs */
+static unsigned int sampling_rate;
+static unsigned int min_sampling_rate;
+
+/* in usecs */
+>>>>>>> 62e9156... smartmax: it helps to know the diff between us and ns :)
 static unsigned int input_boost_duration;
 
 static unsigned int touch_poke_freq = 760000;
@@ -142,7 +150,7 @@ static bool ramp_up_during_boost = true;
 static unsigned int boost_freq = 760000;
 static bool boost = true;
 
-/* in nsecs */
+/* in usecs */
 static unsigned int boost_duration = 0;
 
 /* Consider IO as busy */
@@ -203,6 +211,11 @@ enum {
 static unsigned long debug_mask = SMARTMAX_DEBUG_LOAD|SMARTMAX_DEBUG_JUMPS|SMARTMAX_DEBUG_ALG|SMARTMAX_DEBUG_BOOST|SMARTMAX_DEBUG_INPUT|SMARTMAX_DEBUG_SUSPEND;
 #else
 static unsigned long debug_mask;
+#endif
+
+#define SMARTMAX_STAT 0
+#if SMARTMAX_STAT
+static u64 timer_stat[4] = {0, 0, 0, 0};
 #endif
 
 /*
@@ -381,7 +394,7 @@ inline static void target_freq(struct cpufreq_policy *policy,
 	__cpufreq_driver_target(policy, target, prefered_relation);
 
 	// remember last time we changed frequency
-	this_smartmax->freq_change_time = ktime_to_ns(ktime_get());
+	this_smartmax->freq_change_time = ktime_to_us(ktime_get());
 }
 
 /* We use the same work function to sale up and down */
@@ -466,7 +479,11 @@ static inline void cpufreq_smartmax_get_ramp_direction(unsigned int debug_load, 
 static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	unsigned int cur;
 	struct cpufreq_policy *policy = this_smartmax->cur_policy;
+<<<<<<< HEAD
 	cputime64_t now = ktime_to_ns(ktime_get());
+=======
+	u64 now = ktime_to_us(ktime_get());
+>>>>>>> 62e9156... smartmax: it helps to know the diff between us and ns :)
 	unsigned int max_load_freq;
 	unsigned int debug_load = 0;
 	unsigned int debug_iowait = 0;
@@ -475,8 +492,19 @@ static void cpufreq_smartmax_timer(struct smartmax_info_s *this_smartmax) {
 	unsigned int cpu = this_smartmax->cpu;
 #endif
 
+#if SMARTMAX_STAT 
+	unsigned int cpu = this_smartmax->cpu;
+    u64 diff = 0;
+    
+    if (timer_stat[cpu])
+        diff = now - timer_stat[cpu];
+        
+    timer_stat[cpu] = now;
+	printk(KERN_DEBUG "[smartmax]:cpu %d %lld\n", cpu, diff);
+#endif
+
 	cur = policy->cur;
-		
+
 	dprintk(SMARTMAX_DEBUG_ALG, "%d: %s cpu %d %lld\n", cur, __func__, cpu, now);
 
 
@@ -1031,6 +1059,23 @@ static int cpufreq_smartmax_boost_task(void *data) {
 		if (!this_smartmax)
 			continue;
 
+<<<<<<< HEAD
+=======
+#ifdef CONFIG_CPU_FREQ_GOV_SMARTMAX_TEGRA
+		if (tegra_input_boost(0, cur_boost_freq) < 0) {
+			continue;
+		}
+
+		boost_running = true;
+
+		now = ktime_to_us(ktime_get());
+		boost_end_time = now + cur_boost_duration;
+		dprintk(SMARTMAX_DEBUG_BOOST, "%s %llu %llu\n", __func__, now, boost_end_time);
+	
+        this_smartmax->prev_cpu_idle = get_cpu_idle_time(0,
+						&this_smartmax->prev_cpu_wall);
+#else
+>>>>>>> 62e9156... smartmax: it helps to know the diff between us and ns :)
 		policy = this_smartmax->cur_policy;
 		if (!policy)
 			continue;
