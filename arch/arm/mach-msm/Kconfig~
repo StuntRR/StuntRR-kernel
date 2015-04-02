@@ -1888,6 +1888,12 @@ config MSM_DEVFREQ_CPUBW
 	  agnostic interface to so that some of the devfreq governors can be
 	  shared across SoCs.
 
+config CPU_VOLTAGE_TABLE
+	bool "Enable CPU Voltage Table via sysfs for adjustements"
+	default n
+	help
+	  DTS based kernel User Votlage Control
+
 config MSM_AVS_HW
 	bool "Enable Adaptive Voltage Scaling (AVS)"
 	default n
@@ -3054,6 +3060,8 @@ config BRICKED_HOTPLUG
 	help
 	  This enables kernel based multi core control.
 	  (up/down hotplug based on load)
+<<<<<<< HEAD
+=======
 
 config MSM_LIMITER
 	bool "MSM Frequency Limiter Driver"
@@ -3062,13 +3070,8 @@ config MSM_LIMITER
 	  The MSM Frequency Limiter Driver controls max frequency limit for each CPU
 	  to desired value on suspend/resume
 
+>>>>>>> d2c4b56... cpufreq: Add Frequency limiter driver
 endif
-
-config MSM_CPU_VOLTAGE_CONTROL
-	bool "Userspace CPU Voltage Control"
-	default y
-	help
-	  This enables userspace CPU Voltage Control.
 
 config HAS_MACH_MEMUTILS
 	default n
