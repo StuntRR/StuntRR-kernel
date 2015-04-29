@@ -11649,6 +11649,8 @@ void sme_disable_dfs_channel(tHalHandle hHal, bool disbale_dfs)
     csrDisableDfsChannel(pMac);
 
 }
+<<<<<<< HEAD
+=======
 
 /* ---------------------------------------------------------------------------
     \fn sme_Encryptmsgsend
@@ -11785,3 +11787,4 @@ eHalStatus sme_SetMiracastVendorConfig(tHalHandle hHal,
     return eHAL_STATUS_SUCCESS;
 }
 
+>>>>>>> 1a42f9d... wlan: Allow apps power collapse even when sco call is in progress
