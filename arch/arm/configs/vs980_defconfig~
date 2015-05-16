@@ -1,4 +1,9 @@
 CONFIG_ASYNC_FSYNC=y
+<<<<<<< HEAD
+=======
+CONFIG_DYNAMIC_FSYNC=y
+
+>>>>>>> d7359c2... Defconfig: Enable Dynamic Fsyc
 CONFIG_ARM=y
 CONFIG_ARM_HAS_SG_CHAIN=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
