@@ -124,74 +124,85 @@ static struct dsi_panel_cmds cabc_sre_sequence;
 static void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 			struct dsi_panel_cmds *pcmds);
 
-static int mdss_dsi_update_cabc_level(struct mdss_dsi_ctrl_pdata *ctrl)
+enum
+{
+	CABC_CLOSE = 0,
+	CABC_LOW_MODE,
+	CABC_MIDDLE_MODE,
+	CABC_HIGH_MODE,
+
+};
+
+static DEFINE_MUTEX(config_mutex);
+static int mdss_dsi_update_cabc_level(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 {
 	int ret = 0;
 	struct mdss_panel_info *pinfo = NULL;
 
-	if (ctrl == NULL) {
-		pr_err("%s: Invalid input data\n", __func__);
-		return -EINVAL;
-	}
+    if (ctrl_pdata == NULL) {
+	    pr_err("%s: Invalid input data\n", __func__);
+	    return -EINVAL;
+    }
 
-	pinfo = &(ctrl->panel_data.panel_info);
+	pinfo = &(ctrl_pdata->panel_data.panel_info);
 
-	if (!pinfo->cabc_available)
-		goto done;
+    if (!pinfo->cabc_available)
+        goto done;
 
-	pr_info("%s: update cabc level=%d sre=%d\n", __func__,
+	pr_info("%s: update cabc level=%d  sre=%d", __func__,
 			pinfo->cabc_mode, pinfo->sre_enabled);
 
 	if (pinfo->sre_available && pinfo->sre_enabled) {
-		mdss_dsi_panel_cmds_send(ctrl, &cabc_sre_sequence);
+		mdss_dsi_panel_cmds_send(ctrl_pdata, &cabc_sre_sequence);
 		goto done;
 	}
 
-	switch (pinfo->cabc_mode) {
-	case 0:
-		mdss_dsi_panel_cmds_send(ctrl, &cabc_off_sequence);
-		break;
-	case 1:
-		mdss_dsi_panel_cmds_send(ctrl,
-			&cabc_user_interface_image_sequence);
-		break;
-	case 2:
-		mdss_dsi_panel_cmds_send(ctrl, &cabc_still_image_sequence);
-		break;
-	case 3:
-		mdss_dsi_panel_cmds_send(ctrl, &cabc_video_image_sequence);
-		break;
-	default:
-		pr_err("%s: cabc level %d is not supported!\n", __func__,
-			pinfo->cabc_mode);
-		ret = -EINVAL;
-		break;
+	switch (pinfo->cabc_mode)
+	{
+		case 0:
+			mdss_dsi_panel_cmds_send(ctrl_pdata, &cabc_off_sequence);
+			break;
+		case 1:
+			mdss_dsi_panel_cmds_send(ctrl_pdata, &cabc_user_interface_image_sequence);
+			break;
+		case 2:
+			mdss_dsi_panel_cmds_send(ctrl_pdata, &cabc_still_image_sequence);
+			break;
+		case 3:
+			mdss_dsi_panel_cmds_send(ctrl_pdata, &cabc_video_image_sequence);
+			break;
+		default:
+			pr_err("%s: cabc level %d is not supported!\n",__func__, pinfo->cabc_mode);
+			ret = -EINVAL;
+			break;
 	}
 
 done:
+
 	return ret;
 }
 
 int mdss_dsi_panel_set_cabc(struct mdss_panel_data *pdata, int level)
 {
 	int ret = 0;
-	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
+	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 	struct mdss_panel_info *pinfo = NULL;
 
-	if (pdata == NULL) {
-		pr_err("%s: Invalid input data\n", __func__);
-		return -EINVAL;
-	}
+    if (pdata == NULL) {
+	    pr_err("%s: Invalid input data\n", __func__);
+	    return -EINVAL;
+    }
 
-	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata, panel_data);
-	pinfo = &(ctrl->panel_data.panel_info);
+    ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata, panel_data);
+	pinfo = &(ctrl_pdata->panel_data.panel_info);
 
-	if (!pinfo->cabc_available)
-		return 0;
+    if (!pinfo->cabc_available)
+        return 0;
 
-	mutex_lock(&panel_cmd_mutex);
+	mutex_lock(&config_mutex);
+
 	if (level < 0 || level > 3) {
-		pr_err("%s: valid cabc values are 0-3\n", __func__);
+		pr_err("%s: valid cabc values are 0-4\n", __func__);
 		goto out;
 	}
 
@@ -202,37 +213,38 @@ int mdss_dsi_panel_set_cabc(struct mdss_panel_data *pdata, int level)
 		goto out;
 	}
 
-	ret = mdss_dsi_update_cabc_level(ctrl);
+	ret = mdss_dsi_update_cabc_level(ctrl_pdata);
 
 out:
-	mutex_unlock(&panel_cmd_mutex);
+	mutex_unlock(&config_mutex);
 	return ret;
 
 }
 
 int mdss_dsi_panel_set_sre(struct mdss_panel_data *pdata, bool enable)
 {
-	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
+	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 	struct mdss_panel_info *pinfo = NULL;
 
-	if (pdata == NULL) {
-		pr_err("%s: Invalid input data\n", __func__);
-		return -EINVAL;
-	}
+    if (pdata == NULL) {
+	    pr_err("%s: Invalid input data\n", __func__);
+	    return -EINVAL;
+    }
 
-	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata, panel_data);
-	pinfo = &(ctrl->panel_data.panel_info);
+    ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata, panel_data);
+	pinfo = &(ctrl_pdata->panel_data.panel_info);
 
-	if (!pinfo->cabc_available || !pinfo->sre_available ||
-		enable == pinfo->sre_enabled)
-		return 0;
+    if (!pinfo->cabc_available || !pinfo->sre_available ||
+            enable == pinfo->sre_enabled)
+        return 0;
 
-	mutex_lock(&panel_cmd_mutex);
+	mutex_lock(&config_mutex);
 	pinfo->sre_enabled = enable;
-	mutex_unlock(&panel_cmd_mutex);
+	mutex_unlock(&config_mutex);
 
-	return mdss_dsi_update_cabc_level(ctrl);
+	return mdss_dsi_update_cabc_level(ctrl_pdata);
 }
+
 
 DEFINE_LED_TRIGGER(bl_led_trigger);
 #if defined(CONFIG_MACH_LGE_BACKLIGHT_SUPPORT)

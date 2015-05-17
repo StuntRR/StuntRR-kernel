@@ -66,6 +66,12 @@ enum {
 };
 
 enum {
+	MDSS_PANEL_POWER_OFF = 0,
+	MDSS_PANEL_POWER_ON,
+	MDSS_PANEL_POWER_DOZE,
+};
+
+enum {
 	MODE_GPIO_NOT_VALID = 0,
 	MODE_GPIO_HIGH,
 	MODE_GPIO_LOW,
@@ -344,6 +350,7 @@ struct mdss_panel_info {
 	u32 partial_update_enabled;
 	struct ion_handle *splash_ihdl;
 	u32 panel_power_on;
+	int panel_power_state;
 
 	int cabc_available;
 	int cabc_mode;
@@ -487,7 +494,7 @@ int mdss_panel_get_boot_cfg(void);
  * Checks if mdss resources have been initialized
  *
  * returns true if mdss is ready, else returns false.
- */
+ */ 
 bool mdss_is_ready(void);
 
 int mdss_dsi_panel_set_cabc(struct mdss_panel_data *panel_data, int level);
