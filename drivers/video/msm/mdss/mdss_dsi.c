@@ -26,6 +26,7 @@
 #endif
 #ifdef CONFIG_MACH_LGE
 #include <mach/board_lge.h>
+#endif
 
 #include "mdss.h"
 #include "mdss_panel.h"
