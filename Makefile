@@ -372,7 +372,7 @@ CFLAGS_KERNEL   = -mfpu=neon-vfpv4 \
 				  -mtune=cortex-a15 \
 				  -fgcse-las \
 				  -fpredictive-commoning \
-				  -O2
+				  -O3
 
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
