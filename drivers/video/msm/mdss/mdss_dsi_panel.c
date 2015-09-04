@@ -34,6 +34,10 @@
 #include <linux/err.h>
 #endif
 
+#ifdef CONFIG_POWERSUSPEND
+#include <linux/powersuspend.h>
+#endif
+
 #define DT_CMD_HDR 6
 
 #ifdef CONFIG_MACH_LGE
@@ -998,6 +1002,7 @@ exit_free:
 	kfree(buf);
 	return -ENOMEM;
 }
+
 
 int mdss_panel_get_dst_fmt(u32 bpp, char mipi_mode, u32 pixel_packing,
 				char *dst_format)

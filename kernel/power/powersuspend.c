@@ -46,6 +46,9 @@
 static unsigned int debug = 1;
 module_param_named(debug_mask, debug, uint, 0644);
 
+static unsigned int sleep_state = 0;
+module_param_named(sleep_state, sleep_state, uint, 0644);
+
 #define dprintk(msg...)		\
 do { 				\
 	if (debug)		\
@@ -64,8 +67,8 @@ static DEFINE_SPINLOCK(state_lock);
 
 /* Yank555.lu : Current powersave state (screen on / off) */
 static int state;
-/* Yank555.lu : Current powersave mode  (kernel / userspace / panel) */
-static int mode;
+/* Yank555.lu : Current powersave suspend_mode  (kernel / userspace / panel) */
+static int suspend_mode;
 
 void register_power_suspend(struct power_suspend *handler)
 {
@@ -112,6 +115,7 @@ static void power_suspend(struct work_struct *work)
 		}
 	}
 	dprintk("[POWERSUSPEND] suspend completed.\n");
+	sleep_state = 1;
 abort_suspend:
 	mutex_unlock(&power_suspend_lock);
 }
@@ -169,7 +173,7 @@ void set_power_suspend_state_panel_hook(int new_state)
 {
 	dprintk("[POWERSUSPEND] panel resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
 	/* Yank555.lu : Only allow panel hook changes in mdss */
-	if (mode == POWER_SUSPEND_PANEL)
+	if (suspend_mode == POWER_SUSPEND_PANEL)
 		set_power_suspend_state(new_state);
 }
 
@@ -188,8 +192,8 @@ static ssize_t power_suspend_state_store(struct kobject *kobj,
 {
 	int new_state = 0;
 
-	/* Yank555.lu : Only allow sysfs changes from userspace mode */
-	if (mode != POWER_SUSPEND_USERSPACE)
+	/* Yank555.lu : Only allow sysfs changes from userspace suspend_mode */
+	if (suspend_mode != POWER_SUSPEND_USERSPACE)
 		return -EINVAL;
 
 	sscanf(buf, "%d\n", &new_state);
@@ -209,7 +213,7 @@ static struct kobj_attribute power_suspend_state_attribute =
 static ssize_t power_suspend_mode_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
-        return sprintf(buf, "%u\n", mode);
+        return sprintf(buf, "%u\n", suspend_mode);
 }
 
 static ssize_t power_suspend_mode_store(struct kobject *kobj,
@@ -223,7 +227,7 @@ static ssize_t power_suspend_mode_store(struct kobject *kobj,
 	switch (data) {
 		case POWER_SUSPEND_PANEL:
 		case POWER_SUSPEND_USERSPACE:
-			mode = data;
+			suspend_mode = data;
 			return count;
 		default:
 			return -EINVAL;
@@ -292,7 +296,7 @@ static int __init power_suspend_init(void)
 	}
 
 #if 0 /* INFO */
-	mode = POWER_SUSPEND_PANEL;	/* Yank555.lu : Default to display panel mode */
+	suspend_mode = POWER_SUSPEND_USERSPACE;	/* Yank555.lu : Default to userspace suspend_mode */
 #endif
 	suspend_mode = POWER_SUSPEND_PANEL; /* Yank555.lu : Default to display panel suspend_mode */
 
@@ -305,7 +309,7 @@ static void __exit power_suspend_exit(void)
 		kobject_put(power_suspend_kobj);
 
 	destroy_workqueue(suspend_work_queue);
-}
+} 
 
 core_initcall(power_suspend_init);
 module_exit(power_suspend_exit);
