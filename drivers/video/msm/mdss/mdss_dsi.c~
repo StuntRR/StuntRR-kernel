@@ -1420,12 +1420,14 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
             touch_notifier_call_chain(LCD_EVENT_TOUCH_LPWG_ON, NULL);
         }
 #endif
+<<<<<<< HEAD
 #ifdef CONFIG_POWERSUSPEND
 		set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
-#endif
+=======
 #ifdef CONFIG_STATE_NOTIFIER
 		if (!use_fb_notifier)
 			state_suspend();
+>>>>>>> c99f6c4... drivers: Add state notifier driver big thanks to @neobuddy89
 #endif
 		break;
 	case MDSS_EVENT_CONT_SPLASH_FINISH:

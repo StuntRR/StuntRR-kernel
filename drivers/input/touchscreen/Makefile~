@@ -85,4 +85,8 @@ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DISNEY)+= disney/
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_G3) 	+= g3/
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_G2) 	+= g2/
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_TIGERS)  += tigers/
+<<<<<<< HEAD
+=======
+obj-$(CONFIG_ALUCARD_TOUCHSCREEN_BOOST)	+= alu-t-boost.o
 obj-$(CONFIG_STATE_NOTIFIER)		+= state_notifier.o
+>>>>>>> c99f6c4... drivers: Add state notifier driver big thanks to @neobuddy89
