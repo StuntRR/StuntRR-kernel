@@ -1403,9 +1403,6 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 		if (ctrl_pdata->on_cmds.link_state == DSI_HS_MODE)
 			rc = mdss_dsi_unblank(pdata);
 #ifdef CONFIG_STATE_NOTIFIER
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-		scr_suspended = false;
-#endif
 		if (!use_fb_notifier)
 			state_resume();
 #endif
@@ -1428,9 +1425,6 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 		set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
 #endif
 #ifdef CONFIG_STATE_NOTIFIER
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-		scr_suspended = true;
-#endif
 		if (!use_fb_notifier)
 			state_suspend();
 #endif
