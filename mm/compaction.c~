@@ -14,9 +14,14 @@
 #include <linux/backing-dev.h>
 #include <linux/sysctl.h>
 #include <linux/sysfs.h>
+<<<<<<< HEAD
+=======
+#include <linux/balloon_compaction.h>
+#include <linux/page-isolation.h>
 #ifdef CONFIG_STATE_NOTIFIER
 #include <linux/state_notifier.h>
 #endif
+>>>>>>> 6415118... mm: compaction: compact all zones when suspended
 #include "internal.h"
 
 #ifdef CONFIG_COMPACTION
