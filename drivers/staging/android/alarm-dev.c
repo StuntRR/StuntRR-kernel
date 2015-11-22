@@ -103,8 +103,48 @@ static void devalarm_cancel(struct devalarm *alrm)
 		hrtimer_cancel(&alrm->u.hrt);
 }
 
-
 static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+	mutex_lock(&alarm_mutex);
+	spin_lock_irqsave(&alarm_slock, flags);
+	alarm_dbg(IO, "alarm %d clear\n", alarm_type);
+	devalarm_try_to_cancel(&alarms[alarm_type]);
+	if (alarm_pending) {
+		alarm_pending &= ~alarm_type_mask;
+		if (!alarm_pending && !wait_pending)
+			__pm_relax(&alarm_wake_lock);
+	}
+	alarm_enabled &= ~alarm_type_mask;
+	spin_unlock_irqrestore(&alarm_slock, flags);
+
+#if 0
+	if (alarm_type == ANDROID_ALARM_RTC_POWEROFF_WAKEUP)
+		set_power_on_alarm(ts->tv_sec, 0);
+#endif
+	mutex_unlock(&alarm_mutex);
+}
+
+static void alarm_set(enum android_alarm_type alarm_type,
+							struct timespec *ts)
+{
+	uint32_t alarm_type_mask = 1U << alarm_type;
+	unsigned long flags;
+
+	mutex_lock(&alarm_mutex);
+	spin_lock_irqsave(&alarm_slock, flags);
+	alarm_dbg(IO, "alarm %d set %ld.%09ld\n",
+			alarm_type, ts->tv_sec, ts->tv_nsec);
+	alarm_enabled |= alarm_type_mask;
+	devalarm_start(&alarms[alarm_type], timespec_to_ktime(*ts));
+	spin_unlock_irqrestore(&alarm_slock, flags);
+
+#if 0
+	if (alarm_type == ANDROID_ALARM_RTC_POWEROFF_WAKEUP)
+		set_power_on_alarm(ts->tv_sec, 1);
+#endif
+	mutex_unlock(&alarm_mutex);
+}
+
+static int alarm_wait(void)
 {
 	int rv = 0;
 	unsigned long flags;
