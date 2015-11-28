@@ -133,8 +133,7 @@ static int __init state_notifier_init(void)
 	if (ret)
 		pr_err("Failed to register FB notifier callback for state notifier.\n");
 
-	susp_wq =
-	    alloc_workqueue("state_susp_wq", WQ_FREEZABLE, 0);
+	susp_wq = create_singlethread_workqueue("state_susp_wq");
 	if (!susp_wq)
 		pr_err("State Notifier failed to allocate suspend workqueue\n");
 
@@ -144,7 +143,7 @@ static int __init state_notifier_init(void)
 	return ret;
 }
 
-late_initcall(state_notifier_init);
+subsys_initcall(state_notifier_init);
 
 MODULE_AUTHOR("Pranav Vashi <neobuddy89@gmail.com>");
 MODULE_DESCRIPTION("State Notifier Driver");
