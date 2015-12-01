@@ -60,7 +60,7 @@ static unsigned int tz_target = TARGET;
 static unsigned int tz_cap = CAP;
 
 /* Boolean to detect if panel has gone off */
-static bool state_suspended = false;
+static bool suspended;
 
 /* Trap into the TrustZone, and call funcs there. */
 static int __secure_tz_entry2(u32 cmd, u32 val1, u32 val2)
