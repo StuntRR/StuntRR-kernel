@@ -10,6 +10,11 @@
 #include <linux/mutex.h>
 #include <linux/pm_wakeup.h>
 
+#ifdef CONFIG_POWERSUSPEND
+#include <linux/powersuspend.h>
+#include <linux/syscalls.h>
+#endif
+
 #include "power.h"
 
 static suspend_state_t autosleep_state;
