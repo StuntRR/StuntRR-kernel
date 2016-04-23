@@ -5718,7 +5718,7 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 
 #ifdef CUST_G2_TOUCH_WAKEUP_GESTURE
 	set_bit(EV_KEY, ts->input_dev->evbit);
-	set_bit(KEY_POWER, ts->input_dev->keybit);
+	set_bit(KEY_WAKEUP, ts->input_dev->keybit);
 #endif
 
 	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_X, 0, ts->pdata->caps->x_max, 0, 0);
