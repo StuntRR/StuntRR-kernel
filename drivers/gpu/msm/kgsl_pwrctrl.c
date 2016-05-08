@@ -505,7 +505,6 @@ static int kgsl_pwrctrl_idle_timer_store(struct device *dev,
 	unsigned int val = 0;
 	struct kgsl_device *device = kgsl_device_from_dev(dev);
 	struct kgsl_pwrctrl *pwr;
-	const long div = 1000/msecs_to_jiffies(1000);
 	int ret;
 
 	if (device == NULL)
@@ -531,7 +530,6 @@ static int kgsl_pwrctrl_idle_timer_show(struct device *dev,
 					char *buf)
 {
 	struct kgsl_device *device = kgsl_device_from_dev(dev);
-	int mul = 1000/msecs_to_jiffies(1000);
 	if (device == NULL)
 		return 0;
 
