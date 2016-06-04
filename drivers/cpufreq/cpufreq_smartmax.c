@@ -70,66 +70,17 @@
 #define DEFAULT_IGNORE_NICE 1
 #endif
 
-#define DEFAULT_SUSPEND_IDEAL_FREQ GOV_IDLE_FREQ
 static unsigned int suspend_ideal_freq;
-
-#define DEFAULT_AWAKE_IDEAL_FREQ GOV_IDLE_FREQ
 static unsigned int awake_ideal_freq;
-
-/*
- * Freqeuncy delta when ramping up above the ideal freqeuncy.
- * Zero disables and causes to always jump straight to max frequency.
- * When below the ideal freqeuncy we always ramp up to the ideal freq.
- */
-#define DEFAULT_RAMP_UP_STEP 300000
 static unsigned int ramp_up_step;
-
-/*
- * Freqeuncy delta when ramping down below the ideal freqeuncy.
- * Zero disables and will calculate ramp down according to load heuristic.
- * When above the ideal freqeuncy we always ramp down to the ideal freq.
- */
-#define DEFAULT_RAMP_DOWN_STEP 150000
 static unsigned int ramp_down_step;
-
-/*
- * CPU freq will be increased if measured load > max_cpu_load;
- */
-#define DEFAULT_MAX_CPU_LOAD 80
 static unsigned int max_cpu_load;
-
-/*
- * CPU freq will be decreased if measured load < min_cpu_load;
- */
-#define DEFAULT_MIN_CPU_LOAD 50
 static unsigned int min_cpu_load;
-
-/*
- * The minimum amount of time in usecs to spend at a frequency before we can ramp up.
- * Notice we ignore this when we are below the ideal frequency.
- */
-#define DEFAULT_UP_RATE 40000
 static unsigned int up_rate;
-
-/*
- * The minimum amount of time in usecs to spend at a frequency before we can ramp down.
- * Notice we ignore this when we are above the ideal frequency.
- */
-#define DEFAULT_DOWN_RATE 80000
 static unsigned int down_rate;
-
-/* in nsecs */
-#define DEFAULT_SAMPLING_RATE 40000
 static unsigned int sampling_rate;
 static unsigned int min_sampling_rate;
-
-/* in nsecs */
-#define DEFAULT_INPUT_BOOST_DURATION 50000000
-
-/* in usecs */
 static unsigned int sampling_rate;
-
-/* in usecs */
 static unsigned int input_boost_duration;
 
 static unsigned int touch_poke_freq = 760000;
@@ -1066,20 +1017,6 @@ static int cpufreq_smartmax_boost_task(void *data) {
 		if (!this_smartmax)
 			continue;
 
-#ifdef CONFIG_CPU_FREQ_GOV_SMARTMAX_TEGRA
-		if (tegra_input_boost(0, cur_boost_freq) < 0) {
-			continue;
-		}
-
-		boost_running = true;
-
-		now = ktime_to_us(ktime_get());
-		boost_end_time = now + cur_boost_duration;
-		dprintk(SMARTMAX_DEBUG_BOOST, "%s %llu %llu\n", __func__, now, boost_end_time);
-	
-        this_smartmax->prev_cpu_idle = get_cpu_idle_time(0,
-						&this_smartmax->prev_cpu_wall);
-#else
 		policy = this_smartmax->cur_policy;
 		if (!policy)
 			continue;
