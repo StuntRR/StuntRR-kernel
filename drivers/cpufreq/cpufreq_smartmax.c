@@ -40,10 +40,6 @@
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif
-
 /******************** Tunable parameters: ********************/
 
 /*
@@ -83,7 +79,7 @@ static unsigned int min_sampling_rate;
 static unsigned int sampling_rate;
 static unsigned int input_boost_duration;
 
-static unsigned int touch_poke_freq = 760000;
+static unsigned int touch_poke_freq = 729600;
 static bool touch_poke = true;
 
 /*
@@ -95,7 +91,7 @@ static bool ramp_up_during_boost = true;
  * external boost interface - boost if duration is written
  * to sysfs for boost_duration
  */
-static unsigned int boost_freq = 760000;
+static unsigned int boost_freq = 729600;
 static bool boost = true;
 
 /* in usecs */
@@ -182,10 +178,6 @@ static bool boost_running = false;
 static unsigned int ideal_freq;
 static bool is_suspended = false;
 static unsigned int min_sampling_rate;
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static struct early_suspend smartmax_early_suspend_handler;
-#endif
 
 #define LATENCY_MULTIPLIER			(1000)
 #define MIN_LATENCY_MULTIPLIER			(100)
@@ -1116,24 +1108,6 @@ static struct input_handler dbs_input_handler = { .event = dbs_input_event,
 		.connect = dbs_input_connect, .disconnect = dbs_input_disconnect,
 		.name = "cpufreq_smartmax", .id_table = dbs_ids, };
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void smartmax_early_suspend(struct early_suspend *h)
-{
-	dprintk(SMARTMAX_DEBUG_SUSPEND, "%s\n", __func__);
-	ideal_freq = suspend_ideal_freq;
-	is_suspended = true;
-	smartmax_update_min_max_allcpus();
-}
-
-static void smartmax_late_resume(struct early_suspend *h)
-{
-	dprintk(SMARTMAX_DEBUG_SUSPEND, "%s\n", __func__);
-	ideal_freq = awake_ideal_freq;
-	is_suspended = false;
-	smartmax_update_min_max_allcpus();
-}
-#endif
-
 static int cpufreq_governor_smartmax(struct cpufreq_policy *new_policy,
 		unsigned int event) {
 	unsigned int cpu = new_policy->cpu;
@@ -1191,9 +1165,6 @@ static int cpufreq_governor_smartmax(struct cpufreq_policy *new_policy,
 				mutex_unlock(&dbs_mutex);
 				return rc;
 			}
-#ifdef CONFIG_HAS_EARLYSUSPEND
-			register_early_suspend(&smartmax_early_suspend_handler);
-#endif
             /* policy latency is in nS. Convert it to uS first */
 			latency = new_policy->cpuinfo.transition_latency / 1000;
 			if (latency == 0)
@@ -1237,9 +1208,6 @@ static int cpufreq_governor_smartmax(struct cpufreq_policy *new_policy,
 		if (!dbs_enable){
 			sysfs_remove_group(cpufreq_global_kobject, &smartmax_attr_group);
 			input_unregister_handler(&dbs_input_handler);
-#ifdef CONFIG_HAS_EARLYSUSPEND
-			unregister_early_suspend(&smartmax_early_suspend_handler);
-#endif
 		}
 		
 		mutex_unlock(&dbs_mutex);
@@ -1293,13 +1261,6 @@ static int __init cpufreq_smartmax_init(void) {
 		this_smartmax->freq_change_time = 0;
 		this_smartmax->cur_cpu_load = 0;
 	}
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	smartmax_early_suspend_handler.suspend = smartmax_early_suspend;
-	smartmax_early_suspend_handler.resume = smartmax_late_resume;
-	smartmax_early_suspend_handler.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 100;
-#endif
-	
 	return cpufreq_register_governor(&cpufreq_gov_smartmax);
 }
 
