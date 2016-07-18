@@ -143,6 +143,15 @@ polling:
 		SPS_DBG1("sps:bam=%pa;source=0x%x;mask=0x%x.\n",
 				BAM_ID(dev), source, mask);
 
+		if ((source == 0) && (dev->props.options & SPS_BAM_RES_CONFIRM)) {
+			SPS_DBG2(
+				"sps: BAM %pa has no source (source = 0x%x).\n",
+				BAM_ID(dev), source);
+
+			spin_unlock_irqrestore(&dev->isr_lock, flags);
+			return SPS_ERROR;
+		}
+
 		if ((source & (1UL << 31)) && (dev->props.callback)) {
 			SPS_DBG1("sps:bam=%pa;callback for case %d.\n",
 				BAM_ID(dev), cb_case);
@@ -231,7 +240,14 @@ static irqreturn_t bam_isr(int irq, void *ctxt)
 				SPS_DBG1(
 					"sps:bam_isr: handle IRQ for bam:%pa IRQ #:%d.\n",
 					BAM_ID(dev), irq);
-				sps_bam_check_irq(dev);
+				if (sps_bam_check_irq(dev)) {
+					SPS_DBG2(
+						"sps:bam_isr: callback bam:%pa IRQ #:%d to poll the pipes.\n",
+						BAM_ID(dev), irq);
+					dev->props.callback(
+						SPS_CALLBACK_BAM_RES_REL,
+						&ready);
+				}
 				dev->props.callback(SPS_CALLBACK_BAM_RES_REL,
 							&ready);
 			} else {
@@ -284,15 +300,15 @@ int sps_bam_enable(struct sps_bam *dev)
 			if (dev->props.options & SPS_BAM_RES_CONFIRM) {
 				result = request_irq(dev->props.irq,
 					(irq_handler_t) bam_isr,
-				        IRQF_TRIGGER_RISING, "sps", dev);
+					IRQF_TRIGGER_RISING, "sps", dev);
 				SPS_DBG(
 					"sps:BAM %pa uses edge for IRQ# %d\n",
 					BAM_ID(dev), dev->props.irq);
 			} else {
 				result = request_irq(dev->props.irq,
 					(irq_handler_t) bam_isr,
-				        IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,
-				        "sps", dev);
+					IRQF_TRIGGER_HIGH | IRQF_NO_SUSPEND,
+					"sps", dev);
 				SPS_DBG(
 					"sps:BAM %pa uses level for IRQ# %d\n",
 					BAM_ID(dev), dev->props.irq);
@@ -792,6 +808,7 @@ int sps_bam_pipe_connect(struct sps_pipe *bam_pipe,
 	void *desc_buf = NULL;
 	u32 pipe_index;
 	int result;
+	unsigned long flags = 0;
 
 	/* Clear the client pipe state and hw init struct */
 	pipe_clear(bam_pipe);
@@ -984,11 +1001,12 @@ int sps_bam_pipe_connect(struct sps_pipe *bam_pipe,
 	}
 
 	/* Indicate initialization is complete */
+	spin_lock_irqsave(&dev->isr_lock, flags);
 	dev->pipes[pipe_index] = bam_pipe;
 	dev->pipe_active_mask |= 1UL << pipe_index;
 	list_add_tail(&bam_pipe->list, &dev->pipes_q);
-
 	bam_pipe->state |= BAM_STATE_INIT;
+	spin_unlock_irqrestore(&dev->isr_lock, flags);
 	result = 0;
 exit_err:
 	if (result) {
@@ -1026,8 +1044,11 @@ int sps_bam_pipe_disconnect(struct sps_bam *dev, u32 pipe_index)
 	pipe = dev->pipes[pipe_index];
 	if (BAM_PIPE_IS_ASSIGNED(pipe)) {
 		if ((dev->pipe_active_mask & (1UL << pipe_index))) {
+			unsigned long flags = 0;
+			spin_lock_irqsave(&dev->isr_lock, flags);
 			list_del(&pipe->list);
 			dev->pipe_active_mask &= ~(1UL << pipe_index);
+			spin_unlock_irqrestore(&dev->isr_lock, flags);
 		}
 		dev->pipe_remote_mask &= ~(1UL << pipe_index);
 		if (pipe->connect.options & SPS_O_NO_DISABLE)
@@ -1102,9 +1123,13 @@ static void pipe_set_irq(struct sps_bam *dev, u32 pipe_index,
 			SPS_DBG2("sps:BAM %pa pipe %d forced to use polling\n",
 				 BAM_ID(dev), pipe_index);
 	}
-	if ((pipe->state & BAM_STATE_MTI) == 0)
+	if ((pipe->state & BAM_STATE_MTI) == 0) {
+		bam_pipe_get_and_clear_irq_status(dev->base,
+						   pipe_index);
+
 		bam_pipe_set_irq(dev->base, pipe_index, irq_enable,
 					 pipe->irq_mask, dev->props.ee);
+	}
 	else
 		bam_pipe_set_mti(dev->base, pipe_index, irq_enable,
 					 pipe->irq_mask, pipe->irq_gen_addr);
@@ -1190,7 +1215,7 @@ int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options)
 							GFP_KERNEL);
 			}
 			if (pipe->sys.desc_cache == NULL) {
-				SPS_ERR("sps:No memory for pipe%d of BAM 0x%x\n",
+				SPS_ERR("sps:No memory for pipe%d of BAM %pa\n",
 						pipe_index, BAM_ID(dev));
 				return -ENOMEM;
 			}
@@ -1199,8 +1224,7 @@ int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options)
 				vmalloc(pipe->desc_size + size);
 
 			if (pipe->sys.desc_cache == NULL) {
-				SPS_ERR(
-					"sps:No memory for pipe %d of BAM %pa\n",
+				SPS_ERR("sps:No memory for pipe%d of BAM %pa\n",
 						pipe_index, BAM_ID(dev));
 				return -ENOMEM;
 			}
@@ -1463,6 +1487,7 @@ int sps_bam_pipe_transfer(struct sps_bam *dev,
 	void *user;
 	int n;
 	int result;
+	struct sps_pipe *pipe = dev->pipes[pipe_index];
 
 	if (transfer->iovec_count == 0) {
 		SPS_ERR("sps:iovec count zero: BAM %pa pipe %d\n",
@@ -1470,7 +1495,13 @@ int sps_bam_pipe_transfer(struct sps_bam *dev,
 		return SPS_ERROR;
 	}
 
-	sps_bam_get_free_count(dev, pipe_index, &count);
+	if (!pipe->sys.ack_xfers && pipe->polled) {
+		sps_bam_pipe_get_unused_desc_num(dev, pipe_index,
+					&count);
+		count = pipe->desc_size / sizeof(struct sps_iovec) - count - 1;
+	} else
+		sps_bam_get_free_count(dev, pipe_index, &count);
+
 	if (count < transfer->iovec_count) {
 		SPS_ERR("sps:Insufficient free desc: BAM %pa pipe %d: %d\n",
 			BAM_ID(dev), pipe_index, count);
@@ -2115,6 +2146,7 @@ int sps_bam_get_free_count(struct sps_bam *dev, u32 pipe_index,
 int sps_bam_set_satellite(struct sps_bam *dev, u32 pipe_index)
 {
 	struct sps_pipe *pipe = dev->pipes[pipe_index];
+	unsigned long flags = 0;
 
 	/*
 	 * Switch to satellite control is only supported on processor
@@ -2156,10 +2188,12 @@ int sps_bam_set_satellite(struct sps_bam *dev, u32 pipe_index)
 	}
 
 	/* Indicate satellite control */
+	spin_lock_irqsave(&dev->isr_lock, flags);
 	list_del(&pipe->list);
 	dev->pipe_active_mask &= ~(1UL << pipe_index);
 	dev->pipe_remote_mask |= pipe->pipe_index_mask;
 	pipe->state |= BAM_STATE_REMOTE;
+	spin_unlock_irqrestore(&dev->isr_lock, flags);
 
 	return 0;
 }
@@ -2235,4 +2269,20 @@ int sps_bam_pipe_get_unused_desc_num(struct sps_bam *dev, u32 pipe_index,
 		*desc_num = (peer_offset + fifo_size - sw_offset) / desc_size;
 
 	return 0;
+}
+
+/*
+ * Check if a pipe of a BAM has any pending descriptor
+ */
+bool sps_bam_pipe_pending_desc(struct sps_bam *dev, u32 pipe_index)
+{
+	u32 sw_offset, peer_offset;
+
+	sw_offset = bam_pipe_get_desc_read_offset(dev->base, pipe_index);
+	peer_offset = bam_pipe_get_desc_write_offset(dev->base, pipe_index);
+
+	if (sw_offset == peer_offset)
+		return false;
+	else
+		return true;
 }
