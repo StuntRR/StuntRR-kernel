@@ -423,6 +423,10 @@ static int kgsl_pwrctrl_max_gpuclk_store(struct device *dev,
 	if (level < 0)
 		goto done;
 
+	/* Hack to avoid 450MHz as max allowed clock */
+	if (level == 2)
+        pwr->thermal_pwrlevel = level - 2;
+	else
 	pwr->thermal_pwrlevel = level;
 
 	/*
