@@ -2385,7 +2385,6 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
  */
 static atomic_long_t calc_load_idle[2];
 static int calc_load_idx;
-
 static inline int calc_load_write_idx(void)
 {
 	int idx = calc_load_idx;

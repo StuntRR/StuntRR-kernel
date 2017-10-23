@@ -122,6 +122,7 @@ config BRICKED_THERMAL
 	tristate "Bricked thermal monitor based on pre core-control msm_thermal"
 	depends on THERMAL_TSENS8960 || THERMAL_TSENS8974
 	depends on CPU_FREQ_MSM
+	depends on MSM_CPU_FREQ_SET_MIN_MAX
 	default n
 	help
 	  This enables thermal monitoring capability in the kernel.
